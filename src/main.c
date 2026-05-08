@@ -4,8 +4,12 @@
 #include "network_system.h"
 
 
+
+Font chaosFont;
+
 int main(void) {
     InitWindow(800, 600, "Chaos RTS - Modular Menu");
+    chaosFont = LoadFontEx("assets/fonts/inter.ttf", 32, 0, 250);
     if (!InitNetwork()) return 1; // Hálózat inicializálása
     GameState currentState = STATE_MAIN_MENU;
     SetTargetFPS(60);

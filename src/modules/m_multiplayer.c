@@ -11,6 +11,9 @@ typedef enum {
     MP_STATE_LOBBY   // Várakozás a kezdésre
 } MultiState;
 
+
+typedef enum { NONE, FIELD_IP, FIELD_PORT, FIELD_NAME, FIELD_PASS } ActiveField;
+static ActiveField activeField = NONE;
 static MultiState subState = MP_STATE_CHOOSE;
 
 // Beviteli mezők tárolói (pufferelése)
@@ -25,16 +28,21 @@ static const Color MY_CYAN = { 0, 255, 255, 255 };
 static const Color MY_GRAY = { 130, 130, 130, 255 };
 
 
-// Segédfüggvény egy stílusos beviteli mezőhöz
 void DrawInputField(const char* label, char* buffer, int x, int y, int width, bool active) {
     DrawText(label, x, y - 20, 15, MY_GRAY);
-    Rectangle field = { (float)x, (float)y, (float)width, 35 };
-    DrawRectangleRec(field, active ? (Color){30, 30, 30, 255} : (Color){15, 15, 15, 255});
-    DrawRectangleLinesEx(field, 1, active ? MY_CYAN : DARKGRAY);
+    Rectangle field = { (float)x, (float)y, (float)width, 35.0f };
+    
+    // Háttér és Neon keret
+    DrawRectangleRec(field, active ? (Color){25, 25, 25, 255} : (Color){10, 10, 10, 255});
+    DrawRectangleLinesEx(field, 1, active ? MY_CYAN : MY_GRAY);
+    
+    // Szöveg kirajzolása
     DrawText(buffer, x + 10, y + 10, 20, active ? WHITE : LIGHTGRAY);
-    if (active && (GetTime() * 2) > (int)(GetTime() * 2)) { // Villogó kurzor
-        int tw = MeasureText(buffer, 20);
-        DrawLine(x + 15 + tw, y + 8, x + 15 + tw, y + 27, MY_CYAN);
+    
+    // Villogó kurzor (Kognitív visszacsatolás)
+    if (active && (((int)(GetTime() * 2)) % 2 == 0)) {
+        int textWidth = MeasureText(buffer, 20);
+        DrawRectangle(x + 12 + textWidth, y + 8, 2, 20, MY_CYAN);
     }
 }
 
@@ -56,27 +64,61 @@ void Module_Multiplayer_Draw(GameState *currentState) {
 
         case MP_STATE_CREATE:
             DrawText("CREATE SESSION", 280, 130, 25, MY_CYAN);
-           
-            DrawInputField("SERVER NAME", serverName, 220, 180, 360, false);
-            DrawInputField("PORT", portNum, 220, 240, 100, false);
-            DrawInputField("PASSWORD (OPTIONAL)", password, 220, 300, 360, false);
+            
+            // Fókuszkezelés: Kattintás detektálása a mezőkön
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                Vector2 mouse = GetMousePosition();
+                if (CheckCollisionPointRec(mouse, (Rectangle){220, 180, 360, 35})) activeField = FIELD_NAME;
+                else if (CheckCollisionPointRec(mouse, (Rectangle){220, 240, 100, 35})) activeField = FIELD_PORT;
+                else if (CheckCollisionPointRec(mouse, (Rectangle){220, 300, 360, 35})) activeField = FIELD_PASS;
+                else activeField = NONE;
+            }
+
+            // Szövegbevitel irányítása az aktív mezőre (UTF-8 támogatással)
+            if (activeField == FIELD_NAME) HandleTextInput(serverName, 31);
+            if (activeField == FIELD_PORT) HandleTextInput(portNum, 5);
+            if (activeField == FIELD_PASS) HandleTextInput(password, 15);
+
+            // Mezők kirajzolása az aktuális tartalommal és aktív állapottal
+            DrawInputField("SERVER NAME", serverName, 220, 180, 360, (activeField == FIELD_NAME));
+            DrawInputField("PORT", portNum, 220, 240, 100, (activeField == FIELD_PORT));
+            DrawInputField("PASSWORD (OPTIONAL)", password, 220, 300, 360, (activeField == FIELD_PASS));
+            
             DrawText(TextFormat("MAX PLAYERS: %d", lobbySize), 220, 350, 20, MY_GRAY);
             
             if (DrawButton("LAUNCH", 300, 400)) {
                 if (StartServer(atoi(portNum), lobbySize)) {
                     subState = MP_STATE_LOBBY;
-                };
+                }
             }
-            if (DrawButton("CANCEL", 300, 470)) subState = MP_STATE_CHOOSE;
+            if (DrawButton("CANCEL", 300, 470)) {
+                activeField = NONE; // Kilépéskor ürítjük a fókuszt
+                subState = MP_STATE_CHOOSE;
+            }
             break;
 
         case MP_STATE_JOIN:
             DrawText("JOIN SESSION", 280, 130, 25, LIME);
             
-            DrawInputField("IP ADDRESS", ipAddr, 220, 180, 360, true);
-            DrawInputField("PORT", portNum, 220, 240, 150, false);
-            DrawInputField("PLAYER NAME", playerName, 220, 300, 360, false);
-            
+           if (subState == MP_STATE_JOIN) {
+            // Mezők kijelölése kattintásra
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                Vector2 mouse = GetMousePosition();
+                if (CheckCollisionPointRec(mouse, (Rectangle){220, 180, 360, 35})) activeField = FIELD_IP;
+                else if (CheckCollisionPointRec(mouse, (Rectangle){220, 240, 150, 35})) activeField = FIELD_PORT;
+                else if (CheckCollisionPointRec(mouse, (Rectangle){220, 300, 360, 35})) activeField = FIELD_NAME;
+                else activeField = NONE;
+            }
+
+            // Bevitel irányítása az aktív mezőre
+            if (activeField == FIELD_IP) HandleTextInput(ipAddr, 15);
+            if (activeField == FIELD_PORT) HandleTextInput(portNum, 5);
+            if (activeField == FIELD_NAME) HandleTextInput(playerName, 15);
+
+            // Megjelenítés (átadjuk az 'active' állapotot a keret színezéséhez)
+            DrawInputField("IP ADDRESS", ipAddr, 220, 180, 360, (activeField == FIELD_IP));
+            DrawInputField("PORT", portNum, 220, 240, 150, (activeField == FIELD_PORT));
+            DrawInputField("PLAYER NAME", playerName, 220, 300, 360, (activeField == FIELD_NAME));            
             if (DrawButton("CONNECT", 300, 400)) {
                 if (StartClient(ipAddr, atoi(portNum))) {
                     *currentState = STATE_GAMEPLAY;
@@ -91,5 +133,6 @@ void Module_Multiplayer_Draw(GameState *currentState) {
             if (DrawButton("START GAME", 300, 400)) *currentState = STATE_GAMEPLAY;
             if (DrawButton("ABANDON", 300, 470)) subState = MP_STATE_CHOOSE;
             break;
+        }
     }
 }
