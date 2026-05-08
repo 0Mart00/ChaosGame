@@ -8,13 +8,14 @@
 #define MAX_ENTITIES 10000
 
 // Entity System - Structure of Arrays (SoA)
-typedef struct  EntitySystem{
-    float x[MAX_ENTITIES];
-    float y[MAX_ENTITIES];
-    float vx[MAX_ENTITIES];
-    float vy[MAX_ENTITIES];
-    int team[MAX_ENTITIES]; // 0: Player, 1: Enemy, stb.
-    Color color[MAX_ENTITIES]; // <--- EZ HIÁNYZOTT
+typedef struct EntitySystem {
+    float x[MAX_ENTITIES], y[MAX_ENTITIES];
+    float vx[MAX_ENTITIES], vy[MAX_ENTITIES];
+    float targetX[MAX_ENTITIES], targetY[MAX_ENTITIES]; // Célpontok
+    bool isSelected[MAX_ENTITIES]; // Kijelölési állapot
+    bool hasTarget[MAX_ENTITIES];  // Van-e aktív parancsa
+    int team[MAX_ENTITIES];
+    Color color[MAX_ENTITIES];
     bool active[MAX_ENTITIES];
     int count;
 } EntitySystem;

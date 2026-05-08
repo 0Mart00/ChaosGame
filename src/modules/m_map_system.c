@@ -121,13 +121,15 @@ void DrawMinimapExtended(Camera2D camera, struct EntitySystem *entities) {
     for (int i = 0; i < entities->count; i++) {
         if (!entities->active[i]) continue;
 
-        // Koordináta transzformáció
         float mX = dest.x + (entities->x[i] * worldToMin);
         float mY = dest.y + (entities->y[i] * worldToMin);
 
-        // Csapatfüggő színezés (0: Játékos/Kék, 1: Ellenség/Piros)
-        Color teamColor = (entities->team[i] == 0) ? BLUE : RED;
-        DrawPixel(mX, mY, teamColor);
+        Color dotColor = (entities->team[i] == 0) ? BLUE : RED;
+    
+        // Ha ki van jelölve, a minimapon is legyen zöld
+        if (entities->isSelected[i]) dotColor = GREEN;
+
+        DrawPixel(mX, mY, dotColor);
     }
 
     // 3. Kamera "Pose" (Látómező keret)

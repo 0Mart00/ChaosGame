@@ -1,15 +1,21 @@
 #include "raylib.h"
+#include "raymath.h"
 #include "simulation.h"
 #include "modules.h"
 #include "map_system.h"
 #include "overlay.h"
 #include "hud.h"
 #include <stdlib.h>
+#include <math.h>
 
 static EntitySystem entities;
 static Camera2D gameCamera = { 0 }; // <--- EZ HIÁNYZOTT: Kamera deklarálása
-                                    //
-                                    //
+static Vector2 selectorStart = { 0 };
+static bool isSelecting = false;
+static bool isDragging = false;
+void SpecialAbility_MindControl(Rectangle area);
+void HandlePlayerInput(Camera2D camera);
+
 void InitSimulation(void) {
     // Kamera alaphelyzetbe állítása
     gameCamera.target = (Vector2){ 0, 0 };
@@ -32,30 +38,48 @@ void UpdateSimulation(float deltaTime) {
     for (int i = 0; i < entities.count; i++) {
         if (!entities.active[i]) continue;
 
-        // Súrlódás lekérése a talajról
-        float friction = GetFrictionAt(entities.x[i], entities.y[i]);
+        if (entities.hasTarget[i]) {
+            float dx = entities.targetX[i] - entities.x[i];
+            float dy = entities.targetY[i] - entities.y[i];
+            float dist = sqrtf(dx*dx + dy*dy);
 
+            if (dist > 5.0f) {
+                // Egyszerű steering (kormányzás)
+                entities.vx[i] = (dx / dist) * 150.0f * deltaTime;
+                entities.vy[i] = (dy / dist) * 150.0f * deltaTime;
+            } else {
+                entities.hasTarget[i] = false;
+                entities.vx[i] = 0;
+                entities.vy[i] = 0;
+            }
+        }
+
+        float friction = GetFrictionAt(entities.x[i], entities.y[i]);
         entities.x[i] += entities.vx[i] * friction;
         entities.y[i] += entities.vy[i] * friction;
-        // Egyszerű fal-ütközés (visszapattanás)
-        if (entities.x[i] < 0 || entities.x[i] > GetScreenWidth()) entities.vx[i] *= -1;
-        if (entities.y[i] < 0 || entities.y[i] > GetScreenHeight()) entities.vy[i] *= -1;
     }
 }
-
 void DrawSimulation(void) {
     for (int i = 0; i < entities.count; i++) {
         if (!entities.active[i]) continue;
-        
-        // Modern, minimalista pontok (kis körök vagy pixelpontok)
-        DrawCircle((int)entities.x[i], (int)entities.y[i], 1.5f, entities.color[i]);
+
+        // Alapértelmezett szín a csapat alapján
+        Color drawColor = entities.color[i];
+
+        // Ha ki van jelölve, felülbíráljuk zöldre
+        if (entities.isSelected[i]) {
+            drawColor = GREEN;
+            // Opcionális: egy kis kör az egység alatt a kijelölés jelzésére
+            DrawCircleLines((int)entities.x[i], (int)entities.y[i], 4.0f, GREEN);
+        }
+
+        DrawCircle((int)entities.x[i], (int)entities.y[i], 2.0f, drawColor);
     }
-    DrawFPS(10, 10);
-    DrawText("ENTITIES: 5000+", 10, 30, 20, LIME);
 }
 
 void Module_Simulation_Draw(GameState *currentState) {
     static bool initialized = false;
+    HandlePlayerInput(gameCamera);
     if (!initialized) {
         InitSimulation();
         InitMapSystem("ChaosSeed123"); // Térkép inicializálása
@@ -116,15 +140,152 @@ void Module_Simulation_Draw(GameState *currentState) {
         DrawMap(gameCamera);
         UpdateSimulation(GetFrameTime());
         DrawSimulation();
+
+        // --- KERET RAJZOLÁSA A VILÁGBAN ---
+        if (isDragging) {
+            Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), gameCamera);
+            Rectangle selRect = {
+                fminf(selectorStart.x, mouseWorld.x),
+                fminf(selectorStart.y, mouseWorld.y),
+                fabsf(selectorStart.x - mouseWorld.x),
+                fabsf(selectorStart.y - mouseWorld.y)
+            };
+
+            // Csak ha ténylegesen húzzuk
+            if (Vector2Distance(selectorStart, mouseWorld) > 2.0f) {
+                // Kitöltés (áttetsző zöld)
+                DrawRectangleRec(selRect, (Color){ 0, 255, 0, 50 }); 
+                // Körvonal (vastagság korrigálva a zoom-hoz)
+                DrawRectangleLinesEx(selRect, 2.0f / gameCamera.zoom, LIME);
+            }
+        }
     EndMode2D();
     
     // Fix elemek (Overlay és HUD)
     DrawTechnicalOverlay(entities.count);
     DrawBottomHUD(currentState);
-    DrawMinimap();
     DrawMinimapExtended(gameCamera, &entities);
     if (IsKeyPressed(KEY_ESCAPE)) {
         *currentState = STATE_MAIN_MENU;
         initialized = false;
     }
 }
+
+void HandlePlayerInput(Camera2D camera) {
+    Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
+    
+    // --- 1. BAL EGÉRGOMB LENYOMÁSA (Kijelölés kezdete) ---
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Megnézzük, van-e már kijelölt egységünk
+        bool anySelected = false;
+        for (int i = 0; i < entities.count; i++) {
+            if (entities.active[i] && entities.team[i] == 0 && entities.isSelected[i]) {
+                anySelected = true;
+                break;
+            }
+        }
+
+        // Ha van kijelölve valami, akkor a kattintás MOZGATÁS parancs
+        if (anySelected && !isDragging) {
+            for (int i = 0; i < entities.count; i++) {
+                if (entities.isSelected[i]) {
+                    entities.targetX[i] = mouseWorld.x;
+                    entities.targetY[i] = mouseWorld.y;
+                    entities.hasTarget[i] = true;
+                }
+            }
+        }
+
+        // Elindítjuk a kijelölő keret rajzolását is
+        selectorStart = mouseWorld;
+        isDragging = true;
+    }
+
+    // --- 2. NYOMVATARTÁS ÉS FELENGEDÉS ---
+    if (isDragging) {
+        Rectangle selRect = {
+            fminf(selectorStart.x, mouseWorld.x),
+            fminf(selectorStart.y, mouseWorld.y),
+            fabsf(selectorStart.x - mouseWorld.x),
+            fabsf(selectorStart.y - mouseWorld.y)
+        };
+
+        // Csak akkor rajzolunk keretet, ha ténylegesen húzzuk az egeret (nem csak egy kattintás)
+        if (Vector2Distance(selectorStart, mouseWorld) > 5.0f) {
+            DrawRectangleLinesEx(selRect, 1.0f / camera.zoom, LIME);
+            DrawRectangleRec(selRect, (Color){ 0, 255, 0, 30 }); // Áttetsző zöld kitöltés
+        }
+
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            // Ha a húzás nagyobb volt mint egy küszöbérték, újrakalkuláljuk a kijelölést
+            if (Vector2Distance(selectorStart, mouseWorld) > 5.0f) {
+                for (int i = 0; i < entities.count; i++) {
+                    if (entities.active[i] && entities.team[i] == 0) {
+                        entities.isSelected[i] = CheckCollisionPointRec(
+                            (Vector2){entities.x[i], entities.y[i]}, selRect);
+                    }
+                }
+            }
+            isDragging = false;
+        }
+    }
+
+    // --- KIJELÖLÉS (Bal egérgomb) ---
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        selectorStart = mouseWorld;
+        isSelecting = true;
+    }
+
+    if (isSelecting) {
+        Rectangle selRect = {
+            fminf(selectorStart.x, mouseWorld.x),
+            fminf(selectorStart.y, mouseWorld.y),
+            fabsf(selectorStart.x - mouseWorld.x),
+            fabsf(selectorStart.y - mouseWorld.y)
+        };
+
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            for (int i = 0; i < entities.count; i++) {
+                if (entities.active[i] && entities.team[i] == 0) {
+                    entities.isSelected[i] = CheckCollisionPointRec((Vector2){entities.x[i], entities.y[i]}, selRect);
+                }
+            }
+            isSelecting = false;
+        }
+        
+        // Vizuális visszacsatolás a keretről
+        DrawRectangleLinesEx(selRect, 1.0f / camera.zoom, GREEN);
+    }
+
+    // --- MOZGATÁS (Jobb egérgomb) ---
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+        for (int i = 0; i < entities.count; i++) {
+            if (entities.isSelected[i]) {
+                entities.targetX[i] = mouseWorld.x;
+                entities.targetY[i] = mouseWorld.y;
+                entities.hasTarget[i] = true;
+            }
+        }
+    }
+
+    // --- SPECIÁLIS KÉPESSÉG (Például: Q billentyű) ---
+    if (IsKeyPressed(KEY_Q)) {
+        // Egy 100x100-as terület az egér körül
+        Rectangle abilityArea = { mouseWorld.x - 50, mouseWorld.y - 50, 100, 100 };
+        SpecialAbility_MindControl(abilityArea);
+        
+        // Vizuális visszacsatolás (opcionális: villanás)
+        DrawRectangleLinesEx(abilityArea, 2.0f, PURPLE); 
+    }
+}
+void SpecialAbility_MindControl(Rectangle area) {
+    for (int i = 0; i < entities.count; i++) {
+        if (!entities.active[i]) continue;
+        if (CheckCollisionPointRec((Vector2){entities.x[i], entities.y[i]}, area)) {
+            entities.team[i] = 0;
+            entities.color[i] = SKYBLUE;
+        }
+    }
+}
+
+
