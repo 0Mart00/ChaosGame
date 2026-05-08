@@ -1,3 +1,5 @@
+#include <stdlib.h>         // Az atoi() függvényhez
+#include "network_system.h" // A StartServer() és StartClient() függvényekhez
 #include "raylib.h"
 #include "modules.h"
 #include <string.h>
@@ -61,8 +63,9 @@ void Module_Multiplayer_Draw(GameState *currentState) {
             DrawText(TextFormat("MAX PLAYERS: %d", lobbySize), 220, 350, 20, MY_GRAY);
             
             if (DrawButton("LAUNCH", 300, 400)) {
-                // Itt indulna az ENet szerver inicializálása
-                subState = MP_STATE_LOBBY;
+                if (StartServer(atoi(portNum), lobbySize)) {
+                    subState = MP_STATE_LOBBY;
+                };
             }
             if (DrawButton("CANCEL", 300, 470)) subState = MP_STATE_CHOOSE;
             break;
@@ -75,8 +78,9 @@ void Module_Multiplayer_Draw(GameState *currentState) {
             DrawInputField("PLAYER NAME", playerName, 220, 300, 360, false);
             
             if (DrawButton("CONNECT", 300, 400)) {
-                // Itt indulna az ENet kliens csatlakozása
-                *currentState = STATE_GAMEPLAY;
+                if (StartClient(ipAddr, atoi(portNum))) {
+                    *currentState = STATE_GAMEPLAY;
+                };
             }
             if (DrawButton("CANCEL", 300, 470)) subState = MP_STATE_CHOOSE;
             break;

@@ -1,15 +1,17 @@
 #include "raylib.h"
 #include "modules.h"
 #include "simulation.h"
-
+#include "network_system.h"
 
 
 int main(void) {
     InitWindow(800, 600, "Chaos RTS - Modular Menu");
+    if (!InitNetwork()) return 1; // Hálózat inicializálása
     GameState currentState = STATE_MAIN_MENU;
     SetTargetFPS(60);
 
     while (!WindowShouldClose() && currentState != STATE_QUIT) {
+        UpdateNetwork(); // Hálózati események pollolása
         BeginDrawing();
         ClearBackground(BLACK);
 
@@ -45,7 +47,7 @@ int main(void) {
 
         EndDrawing();
     }
-
+    CleanupNetwork();
     CloseWindow();
     return 0;
 }
