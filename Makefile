@@ -2,18 +2,21 @@
 CC = gcc
 CFLAGS = -Wall -std=c99 -Iinclude -O3
 
-# Alapértelmezett LDFLAGS (Minden platformra közös)
-# Itt adjuk hozzá az enet-et
+# Alapértelmezett LDFLAGS
 COMMON_LDFLAGS = -lenet
 
 # Rendszerfüggő beállítások
 ifeq ($(OS),Windows_NT)
-    LDFLAGS = -Llib -lraylib -lopengl32 -lgdi32 -lwinmm $(COMMON_LDFLAGS)
+    # Windowson kell a ws2_32 az ENet-hez
+    LDFLAGS = -Llib -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32 $(COMMON_LDFLAGS)
     TARGET = chaos_rts.exe
+    CLEAN_CMD = rm -f src/*.o src/modules/*.o $(TARGET)
 else
-    # Linux/Unix esetén az enet-et is bele kell fűzni
+    # Linux/Unix/macOS
+    # macOS esetén gyakran kell az extra framework-ök, de a brew-s raylib kezeli
     LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 $(COMMON_LDFLAGS)
     TARGET = chaos_rts
+    CLEAN_CMD = rm -f src/*.o src/modules/*.o $(TARGET)
 endif
 
 # Forrásfájlok automatikus keresése
@@ -32,4 +35,5 @@ $(TARGET): $(OBJ)
 
 # Takarítás
 clean:
-	rm -f src/*.o src/modules/*.o $(TARGET)
+	$(CLEAN_CMD)
+

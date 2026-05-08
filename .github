@@ -1,0 +1,62 @@
+name: Multi-platform Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --- LINUX FÜGGŐSÉGEK ---
+      - name: Install Dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libraylib-dev libenet-dev libx11-dev libxrandr-dev libxi-dev libxinerama-dev libxcursor-dev libgl1-mesa-dev
+
+      # --- MACOS FÜGGŐSÉGEK ---
+      - name: Install Dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install raylib enet
+
+      # --- WINDOWS FÜGGŐSÉGEK (MSYS2) ---
+      - name: Install Dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-raylib
+            mingw-w64-x86_64-enet
+            make
+
+      # --- FORDÍTÁS ---
+      - name: Build Project (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: make
+
+      - name: Build Project (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: make
+
+      # --- KÉSZ TERMÉK FELTÖLTÉSE ---
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChaosGame-${{ matrix.os }}
+          path: |
+            chaos_rts
+            chaos_rts.exe
+
