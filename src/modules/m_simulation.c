@@ -69,6 +69,47 @@ void Module_Simulation_Draw(GameState *currentState) {
     }
     gameCamera.zoom += ((float)GetMouseWheelMove() * 0.05f);
     if (gameCamera.zoom < 0.1f) gameCamera.zoom = 0.1f;
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        Vector2 delta = GetMouseDelta();
+        gameCamera.target.x -= delta.x / gameCamera.zoom;
+        gameCamera.target.y -= delta.y / gameCamera.zoom;
+    }
+   
+    // 2. Zoom kezelése
+    gameCamera.zoom += ((float)GetMouseWheelMove() * 0.05f);
+    if (gameCamera.zoom < 0.5f) gameCamera.zoom = 0.5f; // Ne lehessen túl távolra menni
+    if (gameCamera.zoom > 3.0f) gameCamera.zoom = 3.0f;
+
+    // 3. KAMERA KORLÁTOZÁSA (Clamp)
+    // Kiszámoljuk a látható terület szélességét és magasságát a világ-koordinátákban
+    // 1. Kiszámoljuk, mekkora területet látunk be valójában (világ koordinátákban)
+    float viewW = (float)GetScreenWidth() / gameCamera.zoom;
+    float viewH = (float)(GetScreenHeight() - 80) / gameCamera.zoom; // -80 a HUD magassága
+
+    // 2. Meghatározzuk a határokat
+    // A cél, hogy a kamera széle (target - view/2) ne legyen kisebb 0-nál,
+    // és a másik széle (target + view/2) ne legyen nagyobb a pálya méreténél.
+    float minX = viewW / 2.0f;
+    float minY = viewH / 2.0f;
+    float maxX = (MAP_WIDTH * TILE_SIZE) - (viewW / 2.0f);
+    float maxY = (MAP_HEIGHT * TILE_SIZE) - (viewH / 2.0f);
+
+    // 3. Alkalmazzuk a kényszerítést (Clamp)
+    // Ha a pálya kisebb, mint a belátható nézet, akkor középre rakjuk
+    if (viewW >= (MAP_WIDTH * TILE_SIZE)) {
+        gameCamera.target.x = (MAP_WIDTH * TILE_SIZE) / 2.0f;
+    } else {
+        if (gameCamera.target.x < minX) gameCamera.target.x = minX;
+        if (gameCamera.target.x > maxX) gameCamera.target.x = maxX;
+    }
+
+    if (viewH >= (MAP_HEIGHT * TILE_SIZE)) {
+    // Itt a trükk: mivel fent lógott ki, figyelembe kell venni az eltolást!
+        gameCamera.target.y = (MAP_HEIGHT * TILE_SIZE) / 2.0f;
+    } else {
+        if (gameCamera.target.y < minY) gameCamera.target.y = minY;
+        if (gameCamera.target.y > maxY) gameCamera.target.y = maxY;
+    }
 
     BeginMode2D(gameCamera); 
         DrawMap(gameCamera);

@@ -31,6 +31,8 @@ typedef struct {
 void InitMapSystem(const char* seedString);
 void DrawMap(Camera2D camera);
 void DrawMinimap(void);
+void DrawMinimapExtended(Camera2D camera);
+
 float GetFrictionAt(float worldX, float worldY);
 void CleanupMapSystem(void);
 

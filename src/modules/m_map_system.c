@@ -101,3 +101,37 @@ float GetFrictionAt(float worldX, float worldY) {
 void CleanupMapSystem(void) {
     UnloadRenderTexture(map.minimapTexture);
 }
+
+void DrawMinimapExtended(Camera2D camera) {
+    int margin = 20;
+    int size = 150;
+    Rectangle dest = { (float)(GetScreenWidth() - size - margin), (float)margin, (float)size, (float)size };
+    
+    // 1. Térkép textúra rajzolása
+    DrawRectangleRec((Rectangle){dest.x - 2, dest.y - 2, dest.width + 4, dest.height + 4}, DARKGRAY);
+    DrawTexturePro(map.minimapTexture.texture, 
+                   (Rectangle){0, 0, MAP_WIDTH, -MAP_HEIGHT}, 
+                   dest, (Vector2){0,0}, 0, WHITE);
+    DrawRectangleLinesEx(dest, 1, MY_CYAN);
+
+    // 2. KAMERA KERET A MINIMAPON
+    // Kiszámoljuk a kamera helyzetét arányosan a minimap méretéhez képest
+    float worldToMinimap = (float)size / (MAP_WIDTH * TILE_SIZE);
+    
+    float viewW = GetScreenWidth() / camera.zoom;
+    float viewH = (GetScreenHeight() - 80) / camera.zoom;
+
+    float camMinimapX = (camera.target.x - viewW / 2.0f) * worldToMinimap;
+    float camMinimapY = (camera.target.y - viewH / 2.0f) * worldToMinimap;
+    float camMinimapW = viewW * worldToMinimap;
+    float camMinimapH = viewH * worldToMinimap;
+
+    Rectangle camRect = { 
+        dest.x + camMinimapX, 
+        dest.y + camMinimapY, 
+        camMinimapW, 
+        camMinimapH 
+    };
+
+    DrawRectangleLinesEx(camRect, 1, LIME);
+}
