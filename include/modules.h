@@ -1,7 +1,9 @@
 #ifndef MODULES_H
 #define MODULES_H
 
+#include "raylib.h"  // <--- EZ KELL AZ ELEJÉRE a Color típus miatt
 #include <stdbool.h> // Szükséges a bool típushoz
+
 static const Color MY_CYAN = { 0, 255, 255, 255 };
 static const Color MY_GRAY = { 130, 130, 130, 255 };
 

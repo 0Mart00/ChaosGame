@@ -1,8 +1,9 @@
 #include "raylib.h"
 #include "simulation.h"
-#include <stdlib.h>
 #include "map_system.h"
-
+#include "overlay.h"
+#include "hud.h"
+#include <stdlib.h>
 
 static EntitySystem entities;
 static Camera2D gameCamera = { 0 }; // <--- EZ HIÁNYZOTT: Kamera deklarálása
@@ -75,7 +76,10 @@ void Module_Simulation_Draw(GameState *currentState) {
         DrawSimulation();
     EndMode2D();
     
-    DrawMinimap(); // <--- JAVÍTVA: Elírás (D_qrawMinimap) eltávolítva
+    // Fix elemek (Overlay és HUD)
+    DrawTechnicalOverlay(entities.count);
+    DrawBottomHUD(currentState);
+    DrawMinimap();
     
     if (IsKeyPressed(KEY_ESCAPE)) {
         *currentState = STATE_MAIN_MENU;

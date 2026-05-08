@@ -7,8 +7,9 @@ COMMON_LDFLAGS = -lenet
 
 # Rendszerfüggő beállítások
 ifeq ($(OS),Windows_NT)
-    # Windowson kell a ws2_32 az ENet-hez
-    LDFLAGS = -Llib -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32 $(COMMON_LDFLAGS)
+    # A -Llib mondja meg, hogy a te lib mappádból dolgozzon
+    LDFLAGS = -Llib -lraylib -lenet -lws2_32 -lwinmm -lgdi32 -lopengl32
+    CFLAGS += -Iinclude
     TARGET = chaos_rts.exe
     CLEAN_CMD = rm -f src/*.o src/modules/*.o $(TARGET)
 else
