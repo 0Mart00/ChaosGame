@@ -56,9 +56,9 @@ void Module_Multiplayer_Draw(GameState *currentState) {
     switch (subState) {
         case MP_STATE_CHOOSE:
             DrawText("MULTIPLAYER", 280, 130, 30, RAYWHITE);
-            if (DrawButton("CREATE SERVER", 300, 220)) subState = MP_STATE_CREATE;
-            if (DrawButton("JOIN SERVER", 300, 300)) subState = MP_STATE_JOIN;
-            if (DrawButton("BACK", 300, 450)) *currentState = STATE_MAIN_MENU;
+            if (DrawButton((Rectangle){ 300, 220, 250, 50 }, "CREATE SERVER")) subState = MP_STATE_CREATE;
+            if (DrawButton((Rectangle){ 300, 300, 250, 50 }, "JOIN SERVER")) subState = MP_STATE_JOIN;
+            if (DrawButton((Rectangle){ 300, 450, 250, 50 }, "BACK")) *currentState = STATE_MAIN_MENU;
             break;
 
         case MP_STATE_CREATE:
@@ -85,17 +85,17 @@ void Module_Multiplayer_Draw(GameState *currentState) {
             
             DrawText(TextFormat("MAX PLAYERS: %d", lobbySize), 220, 350, 20, MY_GRAY);
             
-            if (DrawButton("LAUNCH", 300, 400)) {
+            // LAUNCH és CANCEL (Server fázis)
+            if (DrawButton((Rectangle){ 300, 400, 250, 50 }, "LAUNCH")) {
                 if (StartServer(atoi(portNum), lobbySize)) {
                     subState = MP_STATE_LOBBY;
                 }
             }
-            if (DrawButton("CANCEL", 300, 470)) {
+            if (DrawButton((Rectangle){ 300, 470, 250, 50 }, "CANCEL")) {
                 activeField = NONE; // Kilépéskor ürítjük a fókuszt
-                subState = MP_STATE_CHOOSE;
+                subState = MP_STATE_CHOOSE;            
+                break;
             }
-            break;
-
         case MP_STATE_JOIN:
             DrawText("JOIN SESSION", 280, 130, 25, LIME);
             
@@ -117,20 +117,22 @@ void Module_Multiplayer_Draw(GameState *currentState) {
             // Megjelenítés (átadjuk az 'active' állapotot a keret színezéséhez)
             DrawInputField("IP ADDRESS", ipAddr, 220, 180, 360, (activeField == FIELD_IP));
             DrawInputField("PORT", portNum, 220, 240, 150, (activeField == FIELD_PORT));
-            DrawInputField("PLAYER NAME", playerName, 220, 300, 360, (activeField == FIELD_NAME));            
-            if (DrawButton("CONNECT", 300, 400)) {
+            DrawInputField("PLAYER NAME", playerName, 220, 300, 360, (activeField == FIELD_NAME));           
+
+            // CONNECT és CANCEL (Client fázis)
+            if (DrawButton((Rectangle){ 300, 400, 250, 50 }, "CONNECT")) {
                 if (StartClient(ipAddr, atoi(portNum))) {
                     *currentState = STATE_GAMEPLAY;
-                };
+                }
             }
-            if (DrawButton("CANCEL", 300, 470)) subState = MP_STATE_CHOOSE;
-            break;
-
+            if (DrawButton((Rectangle){ 300, 470, 250, 50 }, "CANCEL")) subState = MP_STATE_CHOOSE;
+            
         case MP_STATE_LOBBY:
             DrawText("WAITING FOR PLAYERS...", 250, 200, 20, GOLD);
             DrawText(TextFormat("Server: %s", serverName), 220, 250, 15, MY_GRAY);
-            if (DrawButton("START GAME", 300, 400)) *currentState = STATE_GAMEPLAY;
-            if (DrawButton("ABANDON", 300, 470)) subState = MP_STATE_CHOOSE;
+            if (DrawButton((Rectangle){ 300, 400, 250, 50 }, "START GAME")) *currentState = STATE_GAMEPLAY;
+            if (DrawButton((Rectangle){ 300, 470, 250, 50 }, "ABANDON")) subState = MP_STATE_CHOOSE;
+            
             break;
         }
     }

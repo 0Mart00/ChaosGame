@@ -21,11 +21,24 @@ int main(void) {
 
         switch (currentState) {
             case STATE_MAIN_MENU:
-                DrawText("CHAOS RTS", 300, 100, 40, RAYWHITE);
-                if (DrawButton("MULTIPLAYER", 300, 200)) currentState = STATE_MULTIPLAYER;
-                if (DrawButton("SETTINGS", 300, 270))    currentState = STATE_SETTINGS;
-                if (DrawButton("MODS & PLUGINS", 300, 340)) currentState = STATE_MODS;
-                if (DrawButton("QUIT", 300, 410))        currentState = STATE_QUIT;
+                // A gombokat egy Rectangle struktúrába csomagoljuk: { x, y, szélesség, magasság }
+                float centerX = GetScreenWidth() / 2.0f - 100; // 200 széles gomb fele az eltolás
+
+                if (DrawButton((Rectangle){ centerX, 200, 200, 50 }, "MULTIPLAYER")) {
+                    currentState = STATE_MULTIPLAYER;
+                }
+    
+                if (DrawButton((Rectangle){ centerX, 270, 200, 50 }, "SETTINGS")) {
+                    currentState = STATE_SETTINGS;
+                }
+    
+                if (DrawButton((Rectangle){ centerX, 340, 200, 50 }, "MODS & PLUGINS")) {
+                    currentState = STATE_MODS;
+                }
+    
+                if (DrawButton((Rectangle){ centerX, 410, 200, 50 }, "QUIT")) {
+                    currentState = STATE_QUIT;
+                }
                 break;
 
             case STATE_SETTINGS:
@@ -43,7 +56,15 @@ int main(void) {
             case STATE_GAMEPLAY:
                 Module_Simulation_Draw(&currentState);
                 break;
-
+            case STATE_BUILD_MENU: 
+            // Itt hívd meg a build menü rajzolóját
+                break;
+            case STATE_SKILL_TREE:
+            // Itt hívd meg a skill tree rajzolóját
+                break;
+            case STATE_TECH_TREE:
+            // Itt hívd meg a tech tree rajzolóját
+                break;
             case STATE_QUIT:
                 // A hurok feltétele kiléptet, de a switch-be is kell a warning miatt
                 break;

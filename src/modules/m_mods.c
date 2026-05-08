@@ -1,13 +1,12 @@
-#include "raylib.h"
 #include "modules.h"
+#include "raylib.h"
 
 void Module_Mods_Draw(GameState *currentState) {
-    static const Color MY_GRAY = { 130, 130, 130, 255 };
+    ClearBackground(BLACK);
+    DrawText("MODS & PLUGINS", 100, 100, 30, WHITE);
 
-    DrawText("MODS & PLUGINS SYSTEM", 100, 100, 20, RAYWHITE);
-    DrawText("No mods loaded.", 100, 150, 20, MY_GRAY);
-
-    if (DrawButton("< BACK", 100, 500)) {
+    // Az új, Rectangle alapú hívás: { x, y, width, height }
+    if (DrawButton((Rectangle){ 100, 500, 150, 40 }, "< BACK")) {
         *currentState = STATE_MAIN_MENU;
     }
 }

@@ -14,11 +14,15 @@ typedef enum {
     STATE_SETTINGS,
     STATE_MODS,
     STATE_GAMEPLAY,
-    STATE_QUIT
+    STATE_QUIT,
+    STATE_BUILD_MENU,
+    STATE_SKILL_TREE,
+    STATE_TECH_TREE,
 } GameState;
 
 // Segédfüggvény a menühöz
-bool DrawButton(const char* text, int x, int y);
+bool DrawButton(Rectangle bounds, const char* text);
+
 
 // Modulok
 void Module_Settings_Draw(GameState *currentState);

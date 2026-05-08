@@ -2,22 +2,25 @@
 #include "raylib.h"
 
 void DrawBottomHUD(GameState *state) {
-    int screenW = GetScreenWidth();
-    int screenH = GetScreenHeight();
-    int hudHeight = 80;
+    float screenW = (float)GetScreenWidth();
+    float screenH = (float)GetScreenHeight();
+    float hudH = screenH * 0.12f;
+    float bW = screenW / 5.0f; // 5 gomb szélességnyi hely
+    float bH = hudH * 0.6f;
+    float bY = (screenH - hudH) + (hudH - bH) / 2.0f;
 
-    // Alsó panel rajzolása
-    DrawRectangle(0, screenH - hudHeight, screenW, hudHeight, (Color){15, 15, 15, 255});
-    DrawLine(0, screenH - hudHeight, screenW, screenH - hudHeight, MY_CYAN);
-
-    // Alsó menü gombjai
-    if (DrawButton("SPAWN CHAOS", 20, screenH - 65)) {
-        // Ide jöhet egy kreatív akció trigger
+    // Building Menu
+    if (DrawButton((Rectangle){ 10, bY, bW, bH }, "BUILDING")) {
+        *state = STATE_BUILD_MENU;
     }
 
-    if (DrawButton("MENU", screenW - 220, screenH - 65)) {
-        *state = STATE_MAIN_MENU;
+    // Skill Tree
+    if (DrawButton((Rectangle){ 20 + bW, bY, bW, bH }, "SKILLS")) {
+        *state = STATE_SKILL_TREE;
     }
 
-    DrawText("CREATIVE COMMANDS", screenW / 2 - 80, screenH - 75, 15, DARKGRAY);
+    // Tech Tree
+    if (DrawButton((Rectangle){ 30 + bW * 2, bY, bW, bH }, "TECH TREE")) {
+        *state = STATE_TECH_TREE;
+    }
 }

@@ -4,28 +4,33 @@
 #include <string.h>
 
 
-bool DrawButton(const char* text, int x, int y) {
-    static const Color MY_CYAN = { 0, 255, 255, 255 }; 
-    static const Color MY_GRAY = { 130, 130, 130, 255 };
+bool DrawButton(Rectangle bounds, const char* text) {
+    Vector2 mousePoint = GetMousePosition();
+    bool hovering = CheckCollisionPointRec(mousePoint, bounds);
+    bool clicked = false;
+
+    if (hovering) {
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            clicked = true;
+        }
+    }
+
+    // Rajzolás
+    DrawRectangleRec(bounds, hovering ? SKYBLUE : DARKGRAY);
+    DrawRectangleLinesEx(bounds, 2.0f, WHITE);
+    
+    // Szöveg középre igazítása (reszponzív módon)
+    int fontSize = bounds.height > 40 ? 20 : 10;
+    int textWidth = MeasureText(text, fontSize);
 
 
-    // A Raylib Rectangle float típusokat vár
-    Rectangle rect = { (float)x, (float)y, 200.0f, 50.0f };
-    
-    // Egér ütközés vizsgálata
-    bool hover = CheckCollisionPointRec(GetMousePosition(), rect);
-    
-    // Háttér rajzolása: ha rajta van az egér, sötétszürke, egyébként fekete
-    DrawRectangleRec(rect, hover ? DARKGRAY : BLACK);
-   
-    // Keret rajzolása: ha rajta van az egér, ciánkék, egyébként szürke
-    DrawRectangleLinesEx(rect, 2.0f, hover ? MY_CYAN : MY_GRAY);
-    
-    // Szöveg kirajzolása a gombon belül
-    DrawText(text, x + 20, y + 15, 20, hover ? WHITE : LIGHTGRAY);
-    
-    // Visszatérünk igazzal, ha az egér a gombon van ÉS megnyomták a bal gombot
-    return hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+    // Kiszámoljuk a középpontot
+    float textX = bounds.x + (bounds.width / 2.0f) - (textWidth / 2.0f);
+    float textY = bounds.y + (bounds.height / 2.0f) - (fontSize / 2.0f);
+
+    DrawText(text, (int)textX, (int)textY, fontSize, WHITE);
+
+    return clicked;
 }
 
 // Kezeli a billentyűzet bevitelt egy adott pufferbe
