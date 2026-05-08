@@ -20,4 +20,6 @@ void Module_Settings_Draw(GameState *currentState);
 void Module_Multiplayer_Draw(GameState *currentState);
 void Module_Mods_Draw(GameState *currentState);
 void HandleTextInput(char* buffer, int maxSize);
+
+
 #endif

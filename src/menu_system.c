@@ -34,7 +34,7 @@ void HandleTextInput(char* buffer, int maxSize) {
 
     while (key > 0) {
         // Csak a látható karaktereket engedjük (UTF-8 támogatással)
-        if ((key >= 32) && (strlen(buffer) < maxSize - 4)) {
+        if ((key >= 32) && (strlen(buffer) < maxSize )) {
             int byteSize = 0;
             const char* utf8Char = CodepointToUTF8(key, &byteSize);
             

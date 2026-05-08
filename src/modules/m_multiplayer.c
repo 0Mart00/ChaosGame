@@ -18,8 +18,8 @@ static MultiState subState = MP_STATE_CHOOSE;
 
 // Beviteli mezők tárolói (pufferelése)
 char serverName[32] = "Chaos Server";
-char ipAddr[16] = "127.0.0.1";
-char portNum[6] = "12345";
+char ipAddr[20] = "127.0.0.1";
+char portNum[12] = "12345";
 char playerName[16] = "Player1";
 char password[16] = "";
 int lobbySize = 8;
