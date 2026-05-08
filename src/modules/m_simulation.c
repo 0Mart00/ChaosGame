@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "simulation.h"
+#include "modules.h"
 #include "map_system.h"
 #include "overlay.h"
 #include "hud.h"
@@ -121,7 +122,7 @@ void Module_Simulation_Draw(GameState *currentState) {
     DrawTechnicalOverlay(entities.count);
     DrawBottomHUD(currentState);
     DrawMinimap();
-    
+    DrawMinimapExtended(gameCamera, &entities);
     if (IsKeyPressed(KEY_ESCAPE)) {
         *currentState = STATE_MAIN_MENU;
         initialized = false;

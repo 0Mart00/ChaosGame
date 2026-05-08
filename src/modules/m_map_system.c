@@ -1,7 +1,8 @@
 #include "raylib.h"
 #include "map_system.h"
-#include <string.h>
+#include "simulation.h"
 #include "modules.h"
+#include <string.h>
 
 static GameMap map;
 
@@ -102,36 +103,48 @@ void CleanupMapSystem(void) {
     UnloadRenderTexture(map.minimapTexture);
 }
 
-void DrawMinimapExtended(Camera2D camera) {
+void DrawMinimapExtended(Camera2D camera, struct EntitySystem *entities) {
     int margin = 20;
     int size = 150;
     Rectangle dest = { (float)(GetScreenWidth() - size - margin), (float)margin, (float)size, (float)size };
     
-    // 1. Térkép textúra rajzolása
+    // 1. Alaptérkép és keret
     DrawRectangleRec((Rectangle){dest.x - 2, dest.y - 2, dest.width + 4, dest.height + 4}, DARKGRAY);
     DrawTexturePro(map.minimapTexture.texture, 
                    (Rectangle){0, 0, MAP_WIDTH, -MAP_HEIGHT}, 
                    dest, (Vector2){0,0}, 0, WHITE);
-    DrawRectangleLinesEx(dest, 1, MY_CYAN);
 
-    // 2. KAMERA KERET A MINIMAPON
-    // Kiszámoljuk a kamera helyzetét arányosan a minimap méretéhez képest
-    float worldToMinimap = (float)size / (MAP_WIDTH * TILE_SIZE);
-    
+    // Világ -> Minimap arányszám
+    float worldToMin = (float)size / (MAP_WIDTH * TILE_SIZE);
+
+    // 2. Egységek kirajzolása a minimapra
+    for (int i = 0; i < entities->count; i++) {
+        if (!entities->active[i]) continue;
+
+        // Koordináta transzformáció
+        float mX = dest.x + (entities->x[i] * worldToMin);
+        float mY = dest.y + (entities->y[i] * worldToMin);
+
+        // Csapatfüggő színezés (0: Játékos/Kék, 1: Ellenség/Piros)
+        Color teamColor = (entities->team[i] == 0) ? BLUE : RED;
+        DrawPixel(mX, mY, teamColor);
+    }
+
+    // 3. Kamera "Pose" (Látómező keret)
     float viewW = GetScreenWidth() / camera.zoom;
     float viewH = (GetScreenHeight() - 80) / camera.zoom;
 
-    float camMinimapX = (camera.target.x - viewW / 2.0f) * worldToMinimap;
-    float camMinimapY = (camera.target.y - viewH / 2.0f) * worldToMinimap;
-    float camMinimapW = viewW * worldToMinimap;
-    float camMinimapH = viewH * worldToMinimap;
-
+    float camX = (camera.target.x - viewW / 2.0f) * worldToMin;
+    float camY = (camera.target.y - viewH / 2.0f) * worldToMin;
+    
     Rectangle camRect = { 
-        dest.x + camMinimapX, 
-        dest.y + camMinimapY, 
-        camMinimapW, 
-        camMinimapH 
+        dest.x + camX, 
+        dest.y + camY, 
+        viewW * worldToMin, 
+        viewH * worldToMin 
     };
 
     DrawRectangleLinesEx(camRect, 1, LIME);
+
 }
+
