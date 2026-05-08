@@ -2,6 +2,9 @@
 #define MODULES_H
 
 #include <stdbool.h> // Szükséges a bool típushoz
+static const Color MY_CYAN = { 0, 255, 255, 255 };
+static const Color MY_GRAY = { 130, 130, 130, 255 };
+
 
 typedef enum {
     STATE_MAIN_MENU,

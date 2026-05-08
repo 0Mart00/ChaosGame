@@ -1,10 +1,20 @@
 #include "raylib.h"
 #include "simulation.h"
 #include <stdlib.h>
+#include "map_system.h"
+
 
 static EntitySystem entities;
-
+static Camera2D gameCamera = { 0 }; // <--- EZ HIÁNYZOTT: Kamera deklarálása
+                                    //
+                                    //
 void InitSimulation(void) {
+    // Kamera alaphelyzetbe állítása
+    gameCamera.target = (Vector2){ 0, 0 };
+    gameCamera.offset = (Vector2){ GetScreenWidth()/2.0f, GetScreenHeight()/2.0f };
+    gameCamera.rotation = 0.0f;
+    gameCamera.zoom = 1.0f;
+
     entities.count = 5000;
     for (int i = 0; i < entities.count; i++) {
         entities.x[i] = GetRandomValue(0, GetScreenWidth());
@@ -20,10 +30,11 @@ void UpdateSimulation(float deltaTime) {
     for (int i = 0; i < entities.count; i++) {
         if (!entities.active[i]) continue;
 
-        // Mozgás alkalmazása
-        entities.x[i] += entities.vx[i];
-        entities.y[i] += entities.vy[i];
+        // Súrlódás lekérése a talajról
+        float friction = GetFrictionAt(entities.x[i], entities.y[i]);
 
+        entities.x[i] += entities.vx[i] * friction;
+        entities.y[i] += entities.vy[i] * friction;
         // Egyszerű fal-ütközés (visszapattanás)
         if (entities.x[i] < 0 || entities.x[i] > GetScreenWidth()) entities.vx[i] *= -1;
         if (entities.y[i] < 0 || entities.y[i] > GetScreenHeight()) entities.vy[i] *= -1;
@@ -41,20 +52,33 @@ void DrawSimulation(void) {
     DrawText("ENTITIES: 5000+", 10, 30, 20, LIME);
 }
 
-// Ez a függvény köti össze a menüt a játékkal
 void Module_Simulation_Draw(GameState *currentState) {
     static bool initialized = false;
     if (!initialized) {
         InitSimulation();
+        InitMapSystem("ChaosSeed123"); // Térkép inicializálása
         initialized = true;
     }
 
-    UpdateSimulation(GetFrameTime());
-    DrawSimulation();
+    // Kamera mozgatás (egérrel vagy nyilakkal)
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        Vector2 delta = GetMouseDelta();
+        gameCamera.target.x -= delta.x / gameCamera.zoom;
+        gameCamera.target.y -= delta.y / gameCamera.zoom;
+    }
+    gameCamera.zoom += ((float)GetMouseWheelMove() * 0.05f);
+    if (gameCamera.zoom < 0.1f) gameCamera.zoom = 0.1f;
 
-    // Kilépés a szimulációból (pl. ESC-re vissza a menübe)
+    BeginMode2D(gameCamera); 
+        DrawMap(gameCamera);
+        UpdateSimulation(GetFrameTime());
+        DrawSimulation();
+    EndMode2D();
+    
+    DrawMinimap(); // <--- JAVÍTVA: Elírás (D_qrawMinimap) eltávolítva
+    
     if (IsKeyPressed(KEY_ESCAPE)) {
         *currentState = STATE_MAIN_MENU;
-        initialized = false; // Reset, hogy legközelebb újragenerálja
+        initialized = false;
     }
 }

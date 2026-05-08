@@ -24,8 +24,7 @@ char playerName[16] = "Player1";
 char password[16] = "";
 int lobbySize = 8;
 
-static const Color MY_CYAN = { 0, 255, 255, 255 }; 
-static const Color MY_GRAY = { 130, 130, 130, 255 };
+
 
 
 void DrawInputField(const char* label, char* buffer, int x, int y, int width, bool active) {
