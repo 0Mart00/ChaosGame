@@ -11,16 +11,21 @@
 
 
 static EntitySystem entities;
-static BuildingSystem gameBuildings; // <--- EZT DEKLARÁLD ITT
 static Camera2D gameCamera = { 0 }; // <--- EZ HIÁNYZOTT: Kamera deklarálása
 static Vector2 selectorStart = { 0 };
 static bool isSelecting = false;
 static bool isDragging = false;
-void SpecialAbility_MindControl(Rectangle area);
-void HandlePlayerInput(Camera2D camera);
 static int activePlacementType = -1; // -1 = nincs építés alatt semmi
 static bool isPlacementMode = false;
+                                   
+void SpecialAbility_MindControl(Rectangle area);
+void HandlePlayerInput(Camera2D camera);
+void HandleBuildingSelection(Vector2 mouseWorld);
 
+BuildingSystem gameBuildings;
+int selectedBuildingIndex = -1;
+
+                                      
 void Module_Simulation_Update(float deltaTime) {
     // Egységek frissítése
     UpdateSimulation(deltaTime);
@@ -110,7 +115,10 @@ void DrawSimulation(void) {
             // Opcionális: egy kis kör az egység alatt a kijelölés jelzésére
             DrawCircleLines((int)entities.x[i], (int)entities.y[i], 4.0f, GREEN);
         }
-
+        if (selectedBuildingIndex != -1) {
+            Building* b = &gameBuildings.buildings[selectedBuildingIndex];
+            DrawRectangleLinesEx(b->bounds, 3.0f, GOLD); // Arany keret a kijelölt épület köré
+        }
         DrawCircle((int)entities.x[i], (int)entities.y[i], 2.0f, drawColor);
     }
 }
@@ -203,6 +211,11 @@ void Module_Simulation_Draw(GameState *currentState) {
 }
 void HandlePlayerInput(Camera2D camera) {
     Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
+    
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isPlacementMode) {
+        Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
+        HandleBuildingSelection(mouseWorld);
+    }
     
     if (isPlacementMode) {
         // 1. Vizualizáció: Rajzoljuk ki az épület "szellemét" (Ghost building)
@@ -342,4 +355,18 @@ void SpecialAbility_MindControl(Rectangle area) {
 void SetPlacementMode(int buildingType) {
     activePlacementType = buildingType;
     isPlacementMode = true;
+ }
+
+void HandleBuildingSelection(Vector2 mouseWorld) {
+    selectedBuildingIndex = -1; // Alaphelyzetben töröljük a kijelölést
+    
+    for (int i = 0; i < gameBuildings.count; i++) {
+        if (!gameBuildings.buildings[i].isActive) continue;
+        
+        if (CheckCollisionPointRec(mouseWorld, gameBuildings.buildings[i].bounds)) {
+            selectedBuildingIndex = i;
+            break;
+        }
+    }
 }
+

@@ -82,3 +82,22 @@ const char* GetBuildingName(BuildingType type) {
     }
     return "Unknown";
 }
+
+void DestroyBuilding(BuildingSystem* system, int index) {
+    if (index >= 0 && index < system->count) {
+        system->buildings[index].isActive = false;
+    }
+}
+
+void UpgradeBuilding(BuildingSystem* system, int index) {
+    if (index >= 0 && index < system->count) {
+        Building* b = &system->buildings[index];
+        b->maxHealth += 500;
+        b->health = b->maxHealth;
+        // Itt adhatsz hozzá szintlépést: b->level++;
+    }
+}
+
+
+
+

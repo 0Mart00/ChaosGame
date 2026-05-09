@@ -45,6 +45,10 @@ void PlaceBuilding(BuildingSystem* system, BuildingType type, Vector2 position, 
 void UpdateBuildings(BuildingSystem* system, float deltaTime);
 void DrawBuildings(const BuildingSystem* system);
 const char* GetBuildingName(BuildingType type);
+void DestroyBuilding(BuildingSystem* system, int index);
+void UpgradeBuilding(BuildingSystem* system, int index);
 
+void DestroyBuilding(BuildingSystem* system, int index);
+void UpgradeBuilding(BuildingSystem* system, int index);
 
 #endif
