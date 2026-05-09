@@ -54,16 +54,10 @@ int main(void) {
                 break;
 
             case STATE_GAMEPLAY:
-                Module_Simulation_Draw(&currentState);
-                break;
-            case STATE_BUILD_MENU: 
-            // Itt hívd meg a build menü rajzolóját
-                break;
+            case STATE_BUILD_MENU:
             case STATE_SKILL_TREE:
-            // Itt hívd meg a skill tree rajzolóját
-                break;
             case STATE_TECH_TREE:
-            // Itt hívd meg a tech tree rajzolóját
+                Module_Simulation_Draw(&currentState);
                 break;
             case STATE_QUIT:
                 // A hurok feltétele kiléptet, de a switch-be is kell a warning miatt

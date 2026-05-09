@@ -44,5 +44,7 @@ void InitBuildingSystem(BuildingSystem* system);
 void PlaceBuilding(BuildingSystem* system, BuildingType type, Vector2 position, int team);
 void UpdateBuildings(BuildingSystem* system, float deltaTime);
 void DrawBuildings(const BuildingSystem* system);
+const char* GetBuildingName(BuildingType type);
+
 
 #endif

@@ -7,16 +7,32 @@
 #include "hud.h"
 #include <stdlib.h>
 #include <math.h>
+#include "buildings.h"
+
 
 static EntitySystem entities;
+static BuildingSystem gameBuildings; // <--- EZT DEKLARÁLD ITT
 static Camera2D gameCamera = { 0 }; // <--- EZ HIÁNYZOTT: Kamera deklarálása
 static Vector2 selectorStart = { 0 };
 static bool isSelecting = false;
 static bool isDragging = false;
 void SpecialAbility_MindControl(Rectangle area);
 void HandlePlayerInput(Camera2D camera);
+static int activePlacementType = -1; // -1 = nincs építés alatt semmi
+static bool isPlacementMode = false;
+
+void Module_Simulation_Update(float deltaTime) {
+    // Egységek frissítése
+    UpdateSimulation(deltaTime);
+    
+    // --- ÉPÜLETEK FRISSÍTÉSE ---
+    UpdateBuildings(&gameBuildings, deltaTime);
+}
 
 void InitSimulation(void) {
+    InitBuildingSystem(&gameBuildings); // Ez üríti ki a listát és állítja nullára a számlálót
+                                        //
+                                        //
     // Kamera alaphelyzetbe állítása
     gameCamera.target = (Vector2){ 0, 0 };
     gameCamera.offset = (Vector2){ GetScreenWidth()/2.0f, GetScreenHeight()/2.0f };
@@ -79,101 +95,114 @@ void DrawSimulation(void) {
 
 void Module_Simulation_Draw(GameState *currentState) {
     static bool initialized = false;
-    HandlePlayerInput(gameCamera);
+    
+    // 1. Inicializálás (Csak egyszer fut le)
     if (!initialized) {
         InitSimulation();
-        InitMapSystem("ChaosSeed123"); // Térkép inicializálása
+        InitMapSystem("ChaosSeed123");
+        InitBuildingSystem(&gameBuildings); // Ne felejtsd el az épületeket is!
         initialized = true;
     }
 
-    // Kamera mozgatás (egérrel vagy nyilakkal)
+    // 2. Input és Kamera kezelése
+    HandlePlayerInput(gameCamera);
+
     if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
         Vector2 delta = GetMouseDelta();
         gameCamera.target.x -= delta.x / gameCamera.zoom;
         gameCamera.target.y -= delta.y / gameCamera.zoom;
     }
+    
     gameCamera.zoom += ((float)GetMouseWheelMove() * 0.05f);
-    if (gameCamera.zoom < 0.1f) gameCamera.zoom = 0.1f;
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-        Vector2 delta = GetMouseDelta();
-        gameCamera.target.x -= delta.x / gameCamera.zoom;
-        gameCamera.target.y -= delta.y / gameCamera.zoom;
-    }
-   
-    // 2. Zoom kezelése
-    gameCamera.zoom += ((float)GetMouseWheelMove() * 0.05f);
-    if (gameCamera.zoom < 0.5f) gameCamera.zoom = 0.5f; // Ne lehessen túl távolra menni
-    if (gameCamera.zoom > 3.0f) gameCamera.zoom = 3.0f;
+    gameCamera.zoom = Clamp(gameCamera.zoom, 0.5f, 3.0f);
 
-    // 3. KAMERA KORLÁTOZÁSA (Clamp)
-    // Kiszámoljuk a látható terület szélességét és magasságát a világ-koordinátákban
-    // 1. Kiszámoljuk, mekkora területet látunk be valójában (világ koordinátákban)
+    // Kamera korlátozás (Clamp logika - marad a tiéd)
     float viewW = (float)GetScreenWidth() / gameCamera.zoom;
-    float viewH = (float)(GetScreenHeight() - 80) / gameCamera.zoom; // -80 a HUD magassága
-
-    // 2. Meghatározzuk a határokat
-    // A cél, hogy a kamera széle (target - view/2) ne legyen kisebb 0-nál,
-    // és a másik széle (target + view/2) ne legyen nagyobb a pálya méreténél.
+    float viewH = (float)(GetScreenHeight() - 80) / gameCamera.zoom;
     float minX = viewW / 2.0f;
     float minY = viewH / 2.0f;
     float maxX = (MAP_WIDTH * TILE_SIZE) - (viewW / 2.0f);
     float maxY = (MAP_HEIGHT * TILE_SIZE) - (viewH / 2.0f);
 
-    // 3. Alkalmazzuk a kényszerítést (Clamp)
-    // Ha a pálya kisebb, mint a belátható nézet, akkor középre rakjuk
-    if (viewW >= (MAP_WIDTH * TILE_SIZE)) {
-        gameCamera.target.x = (MAP_WIDTH * TILE_SIZE) / 2.0f;
-    } else {
-        if (gameCamera.target.x < minX) gameCamera.target.x = minX;
-        if (gameCamera.target.x > maxX) gameCamera.target.x = maxX;
-    }
+    if (viewW >= (MAP_WIDTH * TILE_SIZE)) gameCamera.target.x = (MAP_WIDTH * TILE_SIZE) / 2.0f;
+    else gameCamera.target.x = Clamp(gameCamera.target.x, minX, maxX);
 
-    if (viewH >= (MAP_HEIGHT * TILE_SIZE)) {
-    // Itt a trükk: mivel fent lógott ki, figyelembe kell venni az eltolást!
-        gameCamera.target.y = (MAP_HEIGHT * TILE_SIZE) / 2.0f;
-    } else {
-        if (gameCamera.target.y < minY) gameCamera.target.y = minY;
-        if (gameCamera.target.y > maxY) gameCamera.target.y = maxY;
-    }
+    if (viewH >= (MAP_HEIGHT * TILE_SIZE)) gameCamera.target.y = (MAP_HEIGHT * TILE_SIZE) / 2.0f;
+    else gameCamera.target.y = Clamp(gameCamera.target.y, minY, maxY);
 
-    BeginMode2D(gameCamera); 
-        DrawMap(gameCamera);
-        UpdateSimulation(GetFrameTime());
-        DrawSimulation();
+    // --- RAJZOLÁS ---
+    
+    // A játéktér rajzolása: Gameplay ÉS Build Menu alatt is látni akarjuk!
+    if (*currentState == STATE_GAMEPLAY || *currentState == STATE_BUILD_MENU) {
+        
+        BeginMode2D(gameCamera); 
+            // 1. Térkép és Egységek
+            DrawMap(gameCamera);
+            DrawBuildings(&gameBuildings); // Épületek megjelenítése
+            DrawSimulation();
+            
+            // 2. Logika frissítése (Csak ha nem áll a játék)
+            Module_Simulation_Update(GetFrameTime());
 
-        // --- KERET RAJZOLÁSA A VILÁGBAN ---
-        if (isDragging) {
-            Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), gameCamera);
-            Rectangle selRect = {
-                fminf(selectorStart.x, mouseWorld.x),
-                fminf(selectorStart.y, mouseWorld.y),
-                fabsf(selectorStart.x - mouseWorld.x),
-                fabsf(selectorStart.y - mouseWorld.y)
-            };
-
-            // Csak ha ténylegesen húzzuk
-            if (Vector2Distance(selectorStart, mouseWorld) > 2.0f) {
-                // Kitöltés (áttetsző zöld)
-                DrawRectangleRec(selRect, (Color){ 0, 255, 0, 50 }); 
-                // Körvonal (vastagság korrigálva a zoom-hoz)
+            // 3. Kijelölő keret (isDragging)
+            if (isDragging) {
+                Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), gameCamera);
+                Rectangle selRect = {
+                    fminf(selectorStart.x, mouseWorld.x), fminf(selectorStart.y, mouseWorld.y),
+                    fabsf(selectorStart.x - mouseWorld.x), fabsf(selectorStart.y - mouseWorld.y)
+                };
+                DrawRectangleRec(selRect, (Color){ 0, 255, 0, 50 });
                 DrawRectangleLinesEx(selRect, 2.0f / gameCamera.zoom, LIME);
             }
-        }
-    EndMode2D();
-    
-    // Fix elemek (Overlay és HUD)
+
+            // 4. Épület "Szellem" (Placement Mode)
+            if (isPlacementMode) {
+                Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), gameCamera);
+                // 64x64-es keret a kurzor körül
+                DrawRectangleLinesEx((Rectangle){ mouseWorld.x - 32, mouseWorld.y - 32, 64, 64 }, 2.0f, LIME);
+            }
+        EndMode2D();
+    }
+
+    // Fix UI elemek (A kamera után, hogy ne mozogjanak el)
     DrawTechnicalOverlay(entities.count);
-    DrawBottomHUD(currentState);
+    DrawBottomHUD(currentState); // Ez rajzolja ki a gombokat a state alapján
     DrawMinimapExtended(gameCamera, &entities);
+
+    // Kilépés kezelése
     if (IsKeyPressed(KEY_ESCAPE)) {
-        *currentState = STATE_MAIN_MENU;
-        initialized = false;
+        if (*currentState == STATE_BUILD_MENU) {
+            *currentState = STATE_GAMEPLAY; // Menüből vissza a játékba
+        } else {
+            *currentState = STATE_MAIN_MENU; // Játékból vissza a főmenübe
+            initialized = false;
+        }
     }
 }
-
 void HandlePlayerInput(Camera2D camera) {
     Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
     
+    if (isPlacementMode) {
+        // 1. Vizualizáció: Rajzoljuk ki az épület "szellemét" (Ghost building)
+        Color ghostColor = (Color){ 0, 255, 0, 150 }; // Áttetsző zöld
+        DrawRectangleLinesEx((Rectangle){ mouseWorld.x - 32, mouseWorld.y - 32, 64, 64 }, 2.0f, ghostColor);
+
+        // 2. Épület lerakása (Bal klikk)
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Itt hívjuk meg a korábban létrehozott Building System-et
+            PlaceBuilding(&gameBuildings, activePlacementType, (Vector2){ mouseWorld.x - 32, mouseWorld.y - 32 }, 0);
+            
+            // Ha csak egyet akarunk építeni, kilépünk az módból:
+            isPlacementMode = false; 
+            activePlacementType = -1;
+        }
+
+        // 3. Mégse (Jobb klikk)
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+            isPlacementMode = false;
+            activePlacementType = -1;
+        }
+    }
     // --- 1. BAL EGÉRGOMB LENYOMÁSA (Kijelölés kezdete) ---
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Megnézzük, van-e már kijelölt egységünk
@@ -288,4 +317,7 @@ void SpecialAbility_MindControl(Rectangle area) {
     }
 }
 
-
+void SetPlacementMode(int buildingType) {
+    activePlacementType = buildingType;
+    isPlacementMode = true;
+}

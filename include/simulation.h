@@ -25,6 +25,8 @@ void InitSimulation(void);
 void UpdateSimulation(float deltaTime);
 void DrawSimulation(void);
 
+
+void SetPlacementMode(int buildingType); // <--- TEDD BE include
 // A modul rajzoló függvénye a menühöz (hogy be tudjuk tölteni a játékot)
 void Module_Simulation_Draw(GameState *currentState);
 

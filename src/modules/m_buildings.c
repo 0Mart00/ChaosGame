@@ -75,3 +75,10 @@ void DrawBuildings(const BuildingSystem* system) {
         DrawText(b->name, b->bounds.x, b->bounds.y + b->bounds.height + 2, 10, WHITE);
     }
 }
+
+const char* GetBuildingName(BuildingType type) {
+    if (type >= 0 && type < BLD_COUNT) {
+        return BuildingNames[type];
+    }
+    return "Unknown";
+}
