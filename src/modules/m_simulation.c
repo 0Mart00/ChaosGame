@@ -51,6 +51,10 @@ void InitSimulation(void) {
 }
 
 void UpdateSimulation(float deltaTime) {
+    // Pálya határai pixelben
+    float worldMaxX = (float)(MAP_WIDTH * TILE_SIZE);
+    float worldMaxY = (float)(MAP_HEIGHT * TILE_SIZE);
+
     for (int i = 0; i < entities.count; i++) {
         if (!entities.active[i]) continue;
 
@@ -60,7 +64,6 @@ void UpdateSimulation(float deltaTime) {
             float dist = sqrtf(dx*dx + dy*dy);
 
             if (dist > 5.0f) {
-                // Egyszerű steering (kormányzás)
                 entities.vx[i] = (dx / dist) * 150.0f * deltaTime;
                 entities.vy[i] = (dy / dist) * 150.0f * deltaTime;
             } else {
@@ -73,6 +76,25 @@ void UpdateSimulation(float deltaTime) {
         float friction = GetFrictionAt(entities.x[i], entities.y[i]);
         entities.x[i] += entities.vx[i] * friction;
         entities.y[i] += entities.vy[i] * friction;
+
+        // --- HATÁROK KÉNYSZERÍTÉSE (BOUNDARY CLAMP) ---
+        // X tengely ellenőrzése
+        if (entities.x[i] < 0) {
+            entities.x[i] = 0;
+            entities.vx[i] = 0;
+        } else if (entities.x[i] > worldMaxX) {
+            entities.x[i] = worldMaxX;
+            entities.vx[i] = 0;
+        }
+
+        // Y tengely ellenőrzése
+        if (entities.y[i] < 0) {
+            entities.y[i] = 0;
+            entities.vy[i] = 0;
+        } else if (entities.y[i] > worldMaxY) {
+            entities.y[i] = worldMaxY;
+            entities.vy[i] = 0;
+        }
     }
 }
 void DrawSimulation(void) {
