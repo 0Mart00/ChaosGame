@@ -1,23 +1,3 @@
-Skill List
-
-Dash
-
-Double Jump
-
-Invisibility
-
-Teleport
-
-Life Steal
-
-Chain Lightning
-
-Mind Control
-
-Gravity Pull
-
-Time Freeze
-
 #ifndef SKILLS_H
 #define SKILLS_H
 

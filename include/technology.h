@@ -1,23 +1,3 @@
-Technology List
-
-Nanobot Repair
-
-Fusion Reactor
-
-Neural Link
-
-Plasma Coating
-
-Antimatter Engine
-
-Quantum Computing
-
-Cyborg Augmentation
-
-Orbital Strike
-
-Shield Overload
-
 #ifndef TECHNOLOGY_H
 #define TECHNOLOGY_H
 
