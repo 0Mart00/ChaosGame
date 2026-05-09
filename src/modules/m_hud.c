@@ -49,7 +49,6 @@ void DrawBottomHUD(GameState *state) {
         } else {
         switch (*state) {
             case STATE_GAMEPLAY: {
-                // ALAP HUD: Menüválasztók
                 float bW = (screenW - (padding * 4)) / 3.0f;
                 float bH = hudH * 0.5f;
                 float bY = hudY + (hudH - bH) / 2.0f;
@@ -57,14 +56,28 @@ void DrawBottomHUD(GameState *state) {
                 if (DrawButton((Rectangle){ padding, bY, bW, bH }, "BUILDING MENU")) {
                     *state = STATE_BUILD_MENU;
                 }
+        
+                // 1. JAVÍTÁS: A gomb CSAK állapotot vált, nem rajzol menüt!
                 if (DrawButton((Rectangle){ padding * 2 + bW, bY, bW, bH }, "SKILL TREE")) {
-                    DrawFloatingMenu("SKILL TREE", SKILL_COUNT, GetSkillName, state);
+                    *state = STATE_SKILL_TREE;
                 }
+        
                 if (DrawButton((Rectangle){ padding * 3 + bW * 2, bY, bW, bH }, "TECH TREE")) {
-                    DrawFloatingMenu("TECHNOLOGY TREE", TECH_COUNT, GetTechName, state);
+                    *state = STATE_TECH_TREE;
                 }
                 break;
             }
+            // 2. JAVÍTÁS: Külön case ágak a menüknek
+            case STATE_SKILL_TREE: {
+                DrawFloatingMenu("SKILL TREE", SKILL_COUNT, GetSkillName, state);
+                break;
+            }
+
+            case STATE_TECH_TREE: {
+                DrawFloatingMenu("TECHNOLOGY TREE", TECH_COUNT, GetTechName, state);
+                break;
+            }
+
 
             case STATE_BUILD_MENU: {
                 // ÉPÍTÉSI MENÜ: Dinamikus gombok az összes épülettípushoz
@@ -109,21 +122,26 @@ void DrawFloatingMenu(const char* title, int count, const char* (*getName)(int),
     float screenW = (float)GetScreenWidth();
     float screenH = (float)GetScreenHeight();
     
-    // Ablak méretei (középre igazítva)
     Rectangle winRec = { screenW * 0.2f, screenH * 0.15f, screenW * 0.6f, screenH * 0.6f };
     
-    // Háttér és fejléc
-    DrawRectangleRec(winRec, (Color){ 20, 20, 25, 250 });
+    // Háttér rajzolása
+    DrawRectangleRec(winRec, (Color){ 30, 30, 35, 250 });
     DrawRectangleLinesEx(winRec, 2, SKYBLUE);
+    
+    // Fejléc sáv
     DrawRectangle(winRec.x, winRec.y, winRec.width, 30, SKYBLUE);
     DrawText(title, winRec.x + 10, winRec.y + 5, 20, BLACK);
 
-    // Bezáró gomb a jobb felső sarokban
+    // --- BEZÁRÁS LOGIKA ---
+    // Csak ha az X-re kattintasz, akkor váltunk vissza GAMEPLAY-re
+    
     if (DrawButton((Rectangle){ winRec.x + winRec.width - 30, winRec.y, 30, 30 }, "X")) {
+        TraceLog(LOG_INFO, "MENU CLOSED BY X BUTTON"); // <--- Ezt add hozzá
         *state = STATE_GAMEPLAY;
+        return;
     }
-
-    // Elemek listázása rácsban
+    
+    // Elemek listázása
     float startY = winRec.y + 40;
     int cols = 3;
     float itemW = (winRec.width - 40) / cols;
@@ -134,9 +152,13 @@ void DrawFloatingMenu(const char* title, int count, const char* (*getName)(int),
         int col = i % cols;
         Rectangle itemRec = { winRec.x + 10 + col * (itemW + 10), startY + row * (itemH + 10), itemW, itemH };
 
+        // Itt figyeld meg: NEM írjuk át a *state-et!
         if (DrawButton(itemRec, getName(i))) {
-            TraceLog(LOG_INFO, "Selected: %s", getName(i));
-            // Itt lehetne a fejlesztés/tanulás logika
+            // Itt csak a logikát futtasd le (pl. fejlesztés indítása)
+            TraceLog(LOG_INFO, "Kiválasztva: %s", getName(i));
+            
+            // Ha ide írnád, hogy *state = STATE_GAMEPLAY, akkor bezáródna. 
+            // Mivel kihagyjuk, a menü nyitva marad.
         }
     }
 }

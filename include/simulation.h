@@ -27,7 +27,7 @@ void DrawSimulation(void);
 
 
 void SetPlacementMode(int buildingType); // <--- TEDD BE include
-// A modul rajzoló függvénye a menühöz (hogy be tudjuk tölteni a játékot)
+void HandlePlayerInput(Camera2D camera, GameState *state);
 void Module_Simulation_Draw(GameState *currentState);
 
 #endif

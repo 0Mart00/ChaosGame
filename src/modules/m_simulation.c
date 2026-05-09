@@ -19,9 +19,8 @@ static int activePlacementType = -1; // -1 = nincs építés alatt semmi
 static bool isPlacementMode = false;
                                    
 void SpecialAbility_MindControl(Rectangle area);
-void HandlePlayerInput(Camera2D camera);
 void HandleBuildingSelection(Vector2 mouseWorld);
-
+void HandlePlayerInput(Camera2D camera, GameState *state);
 BuildingSystem gameBuildings;
 int selectedBuildingIndex = -1;
 
@@ -125,7 +124,6 @@ void DrawSimulation(void) {
 
 void Module_Simulation_Draw(GameState *currentState) {
     static bool initialized = false;
-    
     // 1. Inicializálás (Csak egyszer fut le)
     if (!initialized) {
         InitSimulation();
@@ -134,8 +132,9 @@ void Module_Simulation_Draw(GameState *currentState) {
         initialized = true;
     }
 
-    // 2. Input és Kamera kezelése
-    HandlePlayerInput(gameCamera);
+    HandlePlayerInput(gameCamera, currentState);
+
+
 
     if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
         Vector2 delta = GetMouseDelta();
@@ -209,14 +208,16 @@ void Module_Simulation_Draw(GameState *currentState) {
         }
     }
 }
-void HandlePlayerInput(Camera2D camera) {
+void HandlePlayerInput(Camera2D camera, GameState *state) {
     Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
     
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isPlacementMode) {
         Vector2 mouseWorld = GetScreenToWorld2D(GetMousePosition(), camera);
         HandleBuildingSelection(mouseWorld);
     }
-    
+    if (*state == STATE_SKILL_TREE || *state == STATE_TECH_TREE || *state  == STATE_BUILD_MENU) {
+        return; 
+    }
     if (isPlacementMode) {
         // 1. Vizualizáció: Rajzoljuk ki az épület "szellemét" (Ghost building)
         Color ghostColor = (Color){ 0, 255, 0, 150 }; // Áttetsző zöld
