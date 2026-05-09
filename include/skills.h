@@ -31,5 +31,7 @@ typedef struct {
 void InitSkillSystem(void);
 void ActivateSkill(SkillType type, int ownerId);
 const char* GetSkillDescription(SkillType type);
+const char* GetSkillName(int index);
+
 
 #endif

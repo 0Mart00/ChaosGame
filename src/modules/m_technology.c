@@ -1,5 +1,19 @@
 #include "technology.h"
 
+static const char* TechNames[] = {
+"Nanobot Repair", "Fusion Reactor", "Neural Link",
+"Plasma Coating", "Antimatter Engine", "Quantum Computing",
+"Cyborg Augmentation", "Orbital Strike", "Shield Overload",
+"Bio-Luminescence", "Laser Guidance", "Cryo-Storage",
+"Jetpack Propulsion", "Smart Ammo", "Holographic Decoy",
+"Genetic Engineering", "Subterranean Drill", "Gamma Ray Burst",
+"Exoskeleton Suit", "Atmosphere Processor", "Warp Drive",
+"Sonic Dampener", "Magnetic Railgun", "AI Autopilot",
+"Thermal Vision", "Energy Harvesting", "Stealth Plating",
+"Telepathic Uplink", "Matter Synthesis", "Force Field Dome"
+};
+
+
 // TECH_NANOBOT_REPAIR: Az egységek és épületek passzív, lassú öngyógyítása harcon kívül.
 void Tech_NanobotRepair() {}
 
@@ -89,3 +103,9 @@ void Tech_MatterSynthesis() {}
 
 // TECH_FORCE_FIELD_DOME: Fix védelmi épület, amely ernyőt von a bázis fölé.
 void Tech_ForceFieldDome() {}
+
+
+const char* GetTechName(int index) {
+    if (index >= 0 && index < TECH_COUNT) return TechNames[index];
+    return "Unknown";
+}

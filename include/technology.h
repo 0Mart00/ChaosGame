@@ -29,5 +29,8 @@ typedef struct {
 void InitTechSystem(void);
 void ResearchTech(TechType type);
 bool IsTechActive(TechType type);
+const char* GetTechName(int index);
+
+
 
 #endif

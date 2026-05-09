@@ -2,6 +2,15 @@
 #include <stdio.h>
 
 // Függvényvázlatok és működési leírások:
+static const char* SkillNames[] = {
+    "Dash", "Double Jump", "Invisibility", "Teleport", "Life Steal", 
+    "Chain Lightning", "Mind Control", "Gravity Pull", "Time Freeze", "Shield Bash",
+    "Poison Cloud", "Summon Minion", "Berserk Rage", "Fireball", "Ice Nova", "Resurrection", "Armor Pierce", 
+    "Shockwave", "Healing Aura", "Clone Projection", "Wall Climb", "Stealth Kill", "Meteor Strike", "Energy Drain",
+    "Explosive Trap", "Flight", "Size Alteration", "Phase Shift", "Vulnerability Hex", "Reflective Barrier"
+
+};
+
 
 // SKILL_DASH: Hirtelen sebességugrás az egység aktuális irányába.
 void Skill_Dash(int ownerId) {}
@@ -92,3 +101,11 @@ void Skill_VulnerabilityHex(int targetId) {}
 
 // SKILL_REFLECTIVE_BARRIER: Pajzs, ami a kapott sebzés egy részét visszaküldi a támadónak.
 void Skill_ReflectiveBarrier(int ownerId) {}
+
+
+
+
+const char* GetSkillName(int index) {
+    if (index >= 0 && index < SKILL_COUNT) return SkillNames[index];
+    return "Unknown";
+}

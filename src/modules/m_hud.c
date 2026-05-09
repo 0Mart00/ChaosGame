@@ -2,10 +2,12 @@
 #include "raylib.h"
 #include "buildings.h"
 #include "modules.h"
-
+#include "skills.h"
+#include "technology.h"
 
 extern int selectedBuildingIndex;
 extern BuildingSystem gameBuildings;
+void DrawFloatingMenu(const char* title, int count, const char* (*getName)(int), GameState* state);
 
 void DrawBottomHUD(GameState *state) {
     float screenW = (float)GetScreenWidth();
@@ -56,10 +58,10 @@ void DrawBottomHUD(GameState *state) {
                     *state = STATE_BUILD_MENU;
                 }
                 if (DrawButton((Rectangle){ padding * 2 + bW, bY, bW, bH }, "SKILL TREE")) {
-                    *state = STATE_SKILL_TREE;
+                    DrawFloatingMenu("SKILL TREE", SKILL_COUNT, GetSkillName, state);
                 }
                 if (DrawButton((Rectangle){ padding * 3 + bW * 2, bY, bW, bH }, "TECH TREE")) {
-                    *state = STATE_TECH_TREE;
+                    DrawFloatingMenu("TECHNOLOGY TREE", TECH_COUNT, GetTechName, state);
                 }
                 break;
             }
@@ -98,6 +100,43 @@ void DrawBottomHUD(GameState *state) {
                     *state = STATE_GAMEPLAY;
                 }
                 break;
+        }
+    }
+}
+
+// Segédfüggvény egy görgethető/listázható ablakhoz
+void DrawFloatingMenu(const char* title, int count, const char* (*getName)(int), GameState* state) {
+    float screenW = (float)GetScreenWidth();
+    float screenH = (float)GetScreenHeight();
+    
+    // Ablak méretei (középre igazítva)
+    Rectangle winRec = { screenW * 0.2f, screenH * 0.15f, screenW * 0.6f, screenH * 0.6f };
+    
+    // Háttér és fejléc
+    DrawRectangleRec(winRec, (Color){ 20, 20, 25, 250 });
+    DrawRectangleLinesEx(winRec, 2, SKYBLUE);
+    DrawRectangle(winRec.x, winRec.y, winRec.width, 30, SKYBLUE);
+    DrawText(title, winRec.x + 10, winRec.y + 5, 20, BLACK);
+
+    // Bezáró gomb a jobb felső sarokban
+    if (DrawButton((Rectangle){ winRec.x + winRec.width - 30, winRec.y, 30, 30 }, "X")) {
+        *state = STATE_GAMEPLAY;
+    }
+
+    // Elemek listázása rácsban
+    float startY = winRec.y + 40;
+    int cols = 3;
+    float itemW = (winRec.width - 40) / cols;
+    float itemH = 40;
+
+    for (int i = 0; i < count; i++) {
+        int row = i / cols;
+        int col = i % cols;
+        Rectangle itemRec = { winRec.x + 10 + col * (itemW + 10), startY + row * (itemH + 10), itemW, itemH };
+
+        if (DrawButton(itemRec, getName(i))) {
+            TraceLog(LOG_INFO, "Selected: %s", getName(i));
+            // Itt lehetne a fejlesztés/tanulás logika
         }
     }
 }
