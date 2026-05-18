@@ -1,5 +1,4 @@
 
-
 ```
 
 * **Language Standard:** ISO C99 / C11
@@ -66,15 +65,3 @@ make clean
 make
 
 ```
-
----
-
-## Configuration Matrix
-
-The runtime variables governing the fractal density, network initialization, and scaling bounds can be tweaked within the source configuration definitions:
-
-| Parameter | Mathematical Symbol | System Default | Operational Scope |
-| Vertex Count | $n$ | `3` | Defines the geometry base (e.g., Triangle, Square, Pentagon) |
-| Compression Ratio | $r$ | `0.5` | Fractional step distance towards target attractor node |
-| Iteration Sample Rate | - | $\ge 10^4$ | Total number of render operations per frame refresh |
-| Protocol Layer | - | `UDP / ENet` | Synchronizes particle seed state across linked remote peers |
